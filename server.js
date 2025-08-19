@@ -9,6 +9,9 @@ const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Servidor rodando na porta ${PORT}`);
+});
 const JWT_SECRET = process.env.JWT_SECRET || 'barbershop_elite_secret_2025';
 
 // Middleware
