@@ -9,9 +9,7 @@ const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Servidor rodando na porta ${PORT}`);
-});
+
 const JWT_SECRET = process.env.JWT_SECRET || 'barbershop_elite_secret_2025';
 
 // Middleware
@@ -563,11 +561,11 @@ app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
-// Iniciar servidor
-app.listen(PORT, () => {
+// Iniciar servidor - ÚNICA CHAMADA app.listen()
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Servidor rodando na porta ${PORT}`);
-    console.log(`🌐 Acesso público: http://localhost:${PORT}`);
-    console.log(`🔐 Área admin: http://localhost:${PORT}/admin`);
+    console.log(`🌐 Ambiente: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🔐 Área admin disponível em /admin`);
     console.log(`👤 Login padrão: admin / admin123`);
 });
 
