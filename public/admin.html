@@ -1,0 +1,1314 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - BarberShop Elite</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1a1a1a, #2c2c2c);
+            color: white;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Login Form */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .login-form {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 3rem;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            border: 2px solid #f4c430;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .login-form h2 {
+            color: #f4c430;
+            text-align: center;
+            margin-bottom: 2rem;
+            font-size: 2rem;
+        }
+
+        /* Admin Dashboard */
+        .admin-header {
+            background: linear-gradient(135deg, #2c1810, #8b4513);
+            padding: 1rem 0;
+            margin-bottom: 2rem;
+            border-radius: 10px;
+        }
+
+        .admin-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .admin-logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #f4c430;
+        }
+
+        .admin-user {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logout-btn {
+            background: #ff4444;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .logout-btn:hover {
+            background: #ff6666;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid #444;
+        }
+
+        .tab {
+            background: none;
+            border: none;
+            color: #ccc;
+            padding: 15px 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            border-radius: 10px 10px 0 0;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            background: #f4c430;
+            color: #1a1a1a;
+            font-weight: bold;
+        }
+
+        .tab:hover:not(.active) {
+            background: rgba(244, 196, 48, 0.2);
+            color: white;
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #f4c430;
+            font-weight: bold;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid rgba(244, 196, 48, 0.3);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1rem;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #f4c430;
+            box-shadow: 0 0 15px rgba(244, 196, 48, 0.3);
+        }
+
+        /* Buttons */
+        .btn {
+            background: linear-gradient(45deg, #f4c430, #daa520);
+            color: #2c1810;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(244, 196, 48, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #ff4444, #cc3333);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            box-shadow: 0 10px 20px rgba(255, 68, 68, 0.4);
+        }
+
+        /* Cards */
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(244, 196, 48, 0.2);
+        }
+
+        .card h3 {
+            color: #f4c430;
+            margin-bottom: 1rem;
+        }
+
+        /* Tables */
+        .table-container {
+            overflow-x: auto;
+            margin-bottom: 2rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #444;
+        }
+
+        th {
+            background: rgba(244, 196, 48, 0.2);
+            color: #f4c430;
+            font-weight: bold;
+        }
+
+        tr:hover {
+            background: rgba(244, 196, 48, 0.1);
+        }
+
+        /* Status badges */
+        .status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .status.pendente {
+            background: #ff9800;
+            color: white;
+        }
+
+        .status.confirmado {
+            background: #4caf50;
+            color: white;
+        }
+
+        .status.cancelado {
+            background: #f44336;
+            color: white;
+        }
+
+        /* Time slots grid */
+        .time-slots-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 10px;
+            margin: 1rem 0;
+        }
+
+        .time-slot {
+            padding: 10px;
+            border: 2px solid #444;
+            border-radius: 5px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .time-slot:hover {
+            border-color: #f4c430;
+        }
+
+        .time-slot.available {
+            background: rgba(76, 175, 80, 0.2);
+            border-color: #4caf50;
+        }
+
+        .time-slot.blocked {
+            background: rgba(244, 67, 54, 0.2);
+            border-color: #f44336;
+        }
+
+        .time-slot.booked {
+            background: rgba(255, 152, 0, 0.2);
+            border-color: #ff9800;
+        }
+
+        /* Messages */
+        .message {
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+        }
+
+        .message.success {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid #4caf50;
+            color: #4caf50;
+        }
+
+        .message.error {
+            background: rgba(244, 67, 54, 0.2);
+            border: 1px solid #f44336;
+            color: #f44336;
+        }
+
+        /* Loading */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #f4c430;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes spin {
+            to { 
+                transform: rotate(360deg); 
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .tabs {
+                flex-wrap: wrap;
+            }
+
+            .tab {
+                font-size: 0.9rem;
+                padding: 10px 15px;
+            }
+
+            .card {
+                padding: 1rem;
+            }
+
+            table {
+                font-size: 0.9rem;
+            }
+
+            th, td {
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-container">
+        <form class="login-form" id="loginForm">
+            <h2>🔐 Admin Login</h2>
+            <div id="loginMessage" class="message" style="display: none;"></div>
+            
+            <div class="form-group">
+                <label for="username">Usuário:</label>
+                <input type="text" id="username" name="username" required placeholder="admin">
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Senha:</label>
+                <input type="password" id="password" name="password" required placeholder="admin123">
+            </div>
+            
+            <button type="submit" class="btn" id="loginBtn">
+                <span id="loginText">Entrar</span>
+                <span id="loginLoading" style="display: none;"><span class="loading"></span> Entrando...</span>
+            </button>
+        </form>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div id="adminDashboard" style="display: none;">
+        <header class="admin-header">
+            <div class="container">
+                <nav class="admin-nav">
+                    <div class="admin-logo">✂️ BarberShop Elite - Admin</div>
+                    <div class="admin-user">
+                        <span>Bem-vindo, <strong id="adminUsername"></strong></span>
+                        <button class="logout-btn" onclick="logout()">Sair</button>
+                    </div>
+                </nav>
+            </div>
+        </header>
+
+        <div class="container">
+            <!-- Tabs Navigation -->
+            <div class="tabs">
+                <button class="tab active" onclick="showTab('bookings')">📅 Agendamentos</button>
+                <button class="tab" onclick="showTab('schedule')">⏰ Gerenciar Horários</button>
+                <button class="tab" onclick="showTab('settings')">⚙️ Configurações</button>
+                <button class="tab" onclick="showTab('stats')">📊 Estatísticas</button>
+            </div>
+
+            <!-- Messages -->
+            <div id="globalMessage" style="display: none;"></div>
+
+            <!-- Bookings Tab -->
+            <div id="bookings-tab" class="tab-content active">
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3>📅 Agendamentos Recentes</h3>
+                        <button class="btn" onclick="loadBookings()">🔄 Atualizar</button>
+                    </div>
+                    
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                        <select id="filterDate" onchange="loadBookings()">
+                            <option value="">Todas as datas</option>
+                        </select>
+                        <select id="filterStatus" onchange="loadBookings()">
+                            <option value="">Todos os status</option>
+                            <option value="Pendente">Pendente</option>
+                            <option value="Confirmado">Confirmado</option>
+                            <option value="Cancelado">Cancelado</option>
+                        </select>
+                    </div>
+
+                    <div class="table-container">
+                        <table id="bookingsTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Cliente</th>
+                                    <th>Telefone</th>
+                                    <th>Serviço</th>
+                                    <th>Data</th>
+                                    <th>Horário</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bookingsTableBody">
+                                <tr>
+                                    <td colspan="8" style="text-align: center; padding: 2rem;">
+                                        <div class="loading"></div> Carregando agendamentos...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Schedule Management Tab -->
+            <div id="schedule-tab" class="tab-content">
+                <div class="card">
+                    <h3>⏰ Gerenciar Horários Disponíveis</h3>
+                    
+                    <div class="form-group">
+                        <label for="scheduleDate">Selecionar Data:</label>
+                        <input type="date" id="scheduleDate" onchange="loadSchedule()">
+                    </div>
+                    
+                    <div id="scheduleContainer">
+                        <p style="text-align: center; color: #ccc;">Selecione uma data para gerenciar os horários</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>🚫 Bloquear Horário</h3>
+                    <form id="blockTimeForm">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 2fr 100px; gap: 1rem; align-items: end;">
+                            <div class="form-group">
+                                <label for="blockDate">Data:</label>
+                                <input type="date" id="blockDate" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="blockTime">Horário:</label>
+                                <select id="blockTime" required>
+                                    <option value="">Selecione</option>
+                                    <option value="09:00">09:00</option>
+                                    <option value="09:30">09:30</option>
+                                    <option value="10:00">10:00</option>
+                                    <option value="10:30">10:30</option>
+                                    <option value="11:00">11:00</option>
+                                    <option value="11:30">11:30</option>
+                                    <option value="14:00">14:00</option>
+                                    <option value="14:30">14:30</option>
+                                    <option value="15:00">15:00</option>
+                                    <option value="15:30">15:30</option>
+                                    <option value="16:00">16:00</option>
+                                    <option value="16:30">16:30</option>
+                                    <option value="17:00">17:00</option>
+                                    <option value="17:30">17:30</option>
+                                    <option value="18:00">18:00</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="blockReason">Motivo (opcional):</label>
+                                <input type="text" id="blockReason" placeholder="Ex: Compromisso pessoal">
+                            </div>
+                            
+                            <button type="submit" class="btn">Bloquear</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div id="settings-tab" class="tab-content">
+                <div class="card">
+                    <h3>📧 Configurações de Email</h3>
+                    <form id="emailSettingsForm">
+                        <div class="form-group">
+                            <label for="ownerEmail">Email para receber notificações:</label>
+                            <input type="email" id="ownerEmail" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="ownerName">Nome do proprietário:</label>
+                            <input type="text" id="ownerName" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="emailNotifications"> 
+                                Receber notificações por email
+                            </label>
+                        </div>
+                        
+                        <button type="submit" class="btn">💾 Salvar Configurações</button>
+                        <button type="button" class="btn" onclick="testEmail()">📧 Testar Email</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h3>🏪 Informações do Negócio</h3>
+                    <form id="businessSettingsForm">
+                        <div class="form-group">
+                            <label for="businessName">Nome da barbearia:</label>
+                            <input type="text" id="businessName" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="businessPhone">Telefone:</label>
+                            <input type="tel" id="businessPhone" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="businessAddress">Endereço:</label>
+                            <textarea id="businessAddress" rows="2" required></textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn">💾 Salvar Informações</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h3>⏰ Horário de Funcionamento</h3>
+                    <form id="workingHoursForm">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="form-group">
+                                <label for="workingStart">Início:</label>
+                                <input type="time" id="workingStart" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="workingEnd">Fim:</label>
+                                <input type="time" id="workingEnd" required>
+                            </div>
+                        </div>
+                        
+                        <h4 style="color: #f4c430; margin: 1rem 0;">Horário de Almoço</h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="form-group">
+                                <label for="lunchStart">Início do almoço:</label>
+                                <input type="time" id="lunchStart" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="lunchEnd">Fim do almoço:</label>
+                                <input type="time" id="lunchEnd" required>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn">💾 Salvar Horários</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Statistics Tab -->
+            <div id="stats-tab" class="tab-content">
+                <div class="card">
+                    <h3>📊 Estatísticas</h3>
+                    <div id="statsContainer">
+                        <div class="loading"></div> Carregando estatísticas...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let authToken = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if already logged in
+            const savedToken = localStorage.getItem('adminToken');
+            if (savedToken) {
+                verifyToken(savedToken);
+            }
+
+            // Set minimum date for date inputs
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('scheduleDate').min = today;
+            document.getElementById('blockDate').min = today;
+
+            // Setup form handlers
+            setupFormHandlers();
+        });
+
+        // Setup form event handlers
+        function setupFormHandlers() {
+            // Login form
+            document.getElementById('loginForm').addEventListener('submit', handleLogin);
+            
+            // Block time form
+            document.getElementById('blockTimeForm').addEventListener('submit', handleBlockTime);
+            
+            // Settings forms
+            document.getElementById('emailSettingsForm').addEventListener('submit', handleEmailSettings);
+            document.getElementById('businessSettingsForm').addEventListener('submit', handleBusinessSettings);
+            document.getElementById('workingHoursForm').addEventListener('submit', handleWorkingHours);
+        }
+
+        // Authentication functions
+        async function handleLogin(e) {
+            e.preventDefault();
+            
+            const loginBtn = document.getElementById('loginBtn');
+            const loginText = document.getElementById('loginText');
+            const loginLoading = document.getElementById('loginLoading');
+            
+            loginBtn.disabled = true;
+            loginText.style.display = 'none';
+            loginLoading.style.display = 'inline';
+            
+            try {
+                const formData = new FormData(e.target);
+                const credentials = {
+                    username: formData.get('username'),
+                    password: formData.get('password')
+                };
+
+                const response = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(credentials)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    authToken = result.token;
+                    currentUser = result.admin;
+                    localStorage.setItem('adminToken', authToken);
+                    
+                    showDashboard();
+                    loadDashboardData();
+                } else {
+                    showLoginMessage(result.error || 'Erro no login', 'error');
+                }
+            } catch (error) {
+                console.error('Erro no login:', error);
+                showLoginMessage('Erro de conexão. Tente novamente.', 'error');
+            } finally {
+                loginBtn.disabled = false;
+                loginText.style.display = 'inline';
+                loginLoading.style.display = 'none';
+            }
+        }
+
+        async function verifyToken(token) {
+            try {
+                const response = await fetch('/api/admin/verify', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    authToken = token;
+                    currentUser = result.user;
+                    showDashboard();
+                    loadDashboardData();
+                } else {
+                    localStorage.removeItem('adminToken');
+                }
+            } catch (error) {
+                console.error('Erro na verificação do token:', error);
+                localStorage.removeItem('adminToken');
+            }
+        }
+
+        function logout() {
+            authToken = null;
+            currentUser = null;
+            localStorage.removeItem('adminToken');
+            
+            document.getElementById('loginScreen').style.display = 'flex';
+            document.getElementById('adminDashboard').style.display = 'none';
+            
+            // Clear forms
+            document.getElementById('loginForm').reset();
+        }
+
+        function showDashboard() {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('adminDashboard').style.display = 'block';
+            document.getElementById('adminUsername').textContent = currentUser.username;
+        }
+
+        function showLoginMessage(message, type) {
+            const messageEl = document.getElementById('loginMessage');
+            messageEl.textContent = message;
+            messageEl.className = `message ${type}`;
+            messageEl.style.display = 'block';
+            
+            setTimeout(() => {
+                messageEl.style.display = 'none';
+            }, 5000);
+        }
+
+        // Tab management
+        function showTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+            
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+            
+            // Load tab-specific data
+            if (tabName === 'bookings') {
+                loadBookings();
+            } else if (tabName === 'settings') {
+                loadSettings();
+            } else if (tabName === 'stats') {
+                loadStatistics();
+            }
+        }
+
+        // Dashboard data loading
+        async function loadDashboardData() {
+            await Promise.all([
+                loadBookings(),
+                loadSettings(),
+                populateDateFilter()
+            ]);
+        }
+
+        // Bookings management
+        async function loadBookings() {
+            const tableBody = document.getElementById('bookingsTableBody');
+            tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center;"><div class="loading"></div> Carregando...</td></tr>';
+
+            try {
+                const filterDate = document.getElementById('filterDate')?.value || '';
+                const filterStatus = document.getElementById('filterStatus')?.value || '';
+                
+                let url = '/api/bookings?';
+                if (filterDate) url += `date=${filterDate}&`;
+                if (filterStatus) url += `status=${filterStatus}&`;
+
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                const bookings = await response.json();
+
+                if (bookings.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center;">Nenhum agendamento encontrado</td></tr>';
+                    return;
+                }
+
+                tableBody.innerHTML = bookings.map(booking => `
+                    <tr>
+                        <td>#${booking.id}</td>
+                        <td>${booking.name}</td>
+                        <td>${booking.phone}</td>
+                        <td>${booking.service}</td>
+                        <td>${formatDate(booking.date)}</td>
+                        <td>${booking.time}</td>
+                        <td><span class="status ${booking.status.toLowerCase()}">${booking.status}</span></td>
+                        <td>
+                            <select onchange="updateBookingStatus(${booking.id}, this.value)">
+                                <option value="${booking.status}">${booking.status}</option>
+                                <option value="Confirmado">Confirmar</option>
+                                <option value="Cancelado">Cancelar</option>
+                                <option value="Pendente">Pendente</option>
+                            </select>
+                        </td>
+                    </tr>
+                `).join('');
+
+            } catch (error) {
+                console.error('Erro ao carregar agendamentos:', error);
+                tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #f44336;">Erro ao carregar agendamentos</td></tr>';
+            }
+        }
+
+        async function updateBookingStatus(bookingId, newStatus) {
+            try {
+                const response = await fetch(`/api/bookings/${bookingId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ status: newStatus })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showMessage('Status atualizado com sucesso!', 'success');
+                    loadBookings(); // Reload bookings
+                } else {
+                    showMessage(result.error || 'Erro ao atualizar status', 'error');
+                }
+            } catch (error) {
+                console.error('Erro ao atualizar status:', error);
+                showMessage('Erro de conexão', 'error');
+            }
+        }
+
+        // Schedule management
+        async function loadSchedule() {
+            const date = document.getElementById('scheduleDate').value;
+            const container = document.getElementById('scheduleContainer');
+            
+            if (!date) {
+                container.innerHTML = '<p style="text-align: center; color: #ccc;">Selecione uma data para gerenciar os horários</p>';
+                return;
+            }
+
+            container.innerHTML = '<div style="text-align: center;"><div class="loading"></div> Carregando horários...</div>';
+
+            try {
+                const response = await fetch(`/api/available-times?date=${date}`);
+                const data = await response.json();
+
+                const allTimes = [
+                    '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
+                    '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00'
+                ];
+
+                let html = '<h4 style="color: #f4c430; margin-bottom: 1rem;">Horários do dia ' + formatDate(date) + '</h4>';
+                html += '<div class="time-slots-grid">';
+
+                allTimes.forEach(time => {
+                    let status = 'available';
+                    let statusText = 'Disponível';
+                    
+                    if (data.blocked.includes(time)) {
+                        status = 'blocked';
+                        statusText = 'Bloqueado';
+                    } else if (data.booked.includes(time)) {
+                        status = 'booked';
+                        statusText = 'Ocupado';
+                    }
+
+                    html += `
+                        <div class="time-slot ${status}" title="${statusText}">
+                            <div>${time}</div>
+                            <small>${statusText}</small>
+                            ${status === 'blocked' ? '<button onclick="unblockTime(\'' + date + '\', \'' + time + '\')" style="margin-top: 5px; padding: 2px 6px; font-size: 0.7rem;">Desbloquear</button>' : ''}
+                        </div>
+                    `;
+                });
+
+                html += '</div>';
+                container.innerHTML = html;
+
+            } catch (error) {
+                console.error('Erro ao carregar horários:', error);
+                container.innerHTML = '<p style="color: #f44336;">Erro ao carregar horários</p>';
+            }
+        }
+
+        async function handleBlockTime(e) {
+            e.preventDefault();
+
+            const formData = new FormData(e.target);
+            const blockData = {
+                date: formData.get('blockDate'),
+                time: formData.get('blockTime'),
+                reason: formData.get('blockReason')
+            };
+
+            try {
+                const response = await fetch('/api/blocked-times', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(blockData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showMessage('Horário bloqueado com sucesso!', 'success');
+                    e.target.reset();
+                    
+                    // Reload schedule if same date is selected
+                    const scheduleDate = document.getElementById('scheduleDate').value;
+                    if (scheduleDate === blockData.date) {
+                        loadSchedule();
+                    }
+                } else {
+                    showMessage(result.error || 'Erro ao bloquear horário', 'error');
+                }
+            } catch (error) {
+                console.error('Erro ao bloquear horário:', error);
+                showMessage('Erro de conexão', 'error');
+            }
+        }
+
+        async function unblockTime(date, time) {
+            if (!confirm(`Deseja desbloquear o horário ${time} do dia ${formatDate(date)}?`)) {
+                return;
+            }
+
+            try {
+                // First, get the blocked time ID
+                const response = await fetch(`/api/blocked-times?date=${date}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const blockedTimes = await response.json();
+                const blockedTime = blockedTimes.find(bt => bt.date === date && bt.time === time);
+                
+                if (!blockedTime) {
+                    showMessage('Horário não encontrado', 'error');
+                    return;
+                }
+
+                const deleteResponse = await fetch(`/api/blocked-times/${blockedTime.id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                const result = await deleteResponse.json();
+
+                if (result.success) {
+                    showMessage('Horário desbloqueado com sucesso!', 'success');
+                    loadSchedule(); // Reload schedule
+                } else {
+                    showMessage(result.error || 'Erro ao desbloquear horário', 'error');
+                }
+            } catch (error) {
+                console.error('Erro ao desbloquear horário:', error);
+                showMessage('Erro de conexão', 'error');
+            }
+        }
+
+        // Settings management
+        async function loadSettings() {
+            try {
+                const response = await fetch('/api/settings', {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                const settings = await response.json();
+
+                // Email settings
+                document.getElementById('ownerEmail').value = settings.owner_email || '';
+                document.getElementById('ownerName').value = settings.owner_name || '';
+                document.getElementById('emailNotifications').checked = settings.email_notifications === 'true';
+
+                // Business settings
+                document.getElementById('businessName').value = settings.business_name || '';
+                document.getElementById('businessPhone').value = settings.business_phone || '';
+                document.getElementById('businessAddress').value = settings.business_address || '';
+
+                // Working hours
+                document.getElementById('workingStart').value = settings.working_hours_start || '09:00';
+                document.getElementById('workingEnd').value = settings.working_hours_end || '18:00';
+                document.getElementById('lunchStart').value = settings.lunch_break_start || '12:00';
+                document.getElementById('lunchEnd').value = settings.lunch_break_end || '14:00';
+
+            } catch (error) {
+                console.error('Erro ao carregar configurações:', error);
+                showMessage('Erro ao carregar configurações', 'error');
+            }
+        }
+
+        async function handleEmailSettings(e) {
+            e.preventDefault();
+            await saveSettings(e.target, 'Configurações de email salvas!');
+        }
+
+        async function handleBusinessSettings(e) {
+            e.preventDefault();
+            await saveSettings(e.target, 'Informações do negócio salvas!');
+        }
+
+        async function handleWorkingHours(e) {
+            e.preventDefault();
+            await saveSettings(e.target, 'Horários de funcionamento salvos!');
+        }
+
+        async function saveSettings(form, successMessage) {
+            try {
+                const formData = new FormData(form);
+                const settings = {};
+                
+                // Map form fields to settings keys
+                const fieldMap = {
+                    'ownerEmail': 'owner_email',
+                    'ownerName': 'owner_name',
+                    'businessName': 'business_name',
+                    'businessPhone': 'business_phone',
+                    'businessAddress': 'business_address',
+                    'workingStart': 'working_hours_start',
+                    'workingEnd': 'working_hours_end',
+                    'lunchStart': 'lunch_break_start',
+                    'lunchEnd': 'lunch_break_end'
+                };
+
+                form.querySelectorAll('input, textarea, select').forEach(element => {
+                    if (element.type === 'checkbox') {
+                        settings[fieldMap[element.id] || element.id] = element.checked ? 'true' : 'false';
+                    } else if (element.value !== '') {
+                        settings[fieldMap[element.id] || element.id] = element.value;
+                    }
+                });
+
+                const response = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(settings)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showMessage(successMessage, 'success');
+                } else {
+                    showMessage(result.error || 'Erro ao salvar configurações', 'error');
+                }
+            } catch (error) {
+                console.error('Erro ao salvar configurações:', error);
+                showMessage('Erro de conexão', 'error');
+            }
+        }
+
+        async function testEmail() {
+            showMessage('Enviando email de teste...', 'success');
+            
+            try {
+                // Create a test booking
+                const testBooking = {
+                    name: 'Cliente Teste',
+                    phone: '(71) 99999-9999',
+                    email: 'teste@barbershop.com',
+                    service: 'Corte Tradicional - R$ 35,00',
+                    barber: 'Teste',
+                    date: new Date().toISOString().split('T')[0],
+                    time: '14:00',
+                    notes: 'Este é um email de teste do sistema de administração'
+                };
+
+                const response = await fetch('/api/bookings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(testBooking)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showMessage('Email de teste enviado com sucesso!', 'success');
+                } else {
+                    showMessage('Erro no envio do email de teste', 'error');
+                }
+            } catch (error) {
+                console.error('Erro no teste de email:', error);
+                showMessage('Erro de conexão no teste de email', 'error');
+            }
+        }
+
+        // Statistics
+        async function loadStatistics() {
+            const container = document.getElementById('statsContainer');
+            container.innerHTML = '<div style="text-align: center;"><div class="loading"></div> Carregando estatísticas...</div>';
+
+            try {
+                const response = await fetch('/api/bookings', {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                const bookings = await response.json();
+
+                // Calculate statistics
+                const stats = calculateStatistics(bookings);
+
+                container.innerHTML = `
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                        <div class="stat-card">
+                            <h4>📅 Total de Agendamentos</h4>
+                            <div class="stat-number">${stats.total}</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>✅ Confirmados</h4>
+                            <div class="stat-number">${stats.confirmed}</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>⏳ Pendentes</h4>
+                            <div class="stat-number">${stats.pending}</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>❌ Cancelados</h4>
+                            <div class="stat-number">${stats.cancelled}</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>💰 Receita Estimada</h4>
+                            <div class="stat-number">R$ ${stats.revenue.toFixed(2)}</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>🗓️ Hoje</h4>
+                            <div class="stat-number">${stats.today}</div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 2rem;">
+                        <h4 style="color: #f4c430;">📊 Serviços Mais Procurados</h4>
+                        <div id="servicesChart" style="margin-top: 1rem;">
+                            ${stats.topServices.map(service => `
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; padding: 0.5rem; background: rgba(255,255,255,0.1); border-radius: 5px;">
+                                    <span>${service.name}</span>
+                                    <span style="background: #f4c430; color: #1a1a1a; padding: 2px 8px; border-radius: 10px; font-weight: bold;">${service.count}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+
+            } catch (error) {
+                console.error('Erro ao carregar estatísticas:', error);
+                container.innerHTML = '<p style="color: #f44336; text-align: center;">Erro ao carregar estatísticas</p>';
+            }
+        }
+
+        function calculateStatistics(bookings) {
+            const today = new Date().toISOString().split('T')[0];
+            const serviceMap = {};
+            const servicePrices = {
+                'corte': 35,
+                'barba': 25,
+                'combo': 70,
+                'bigode': 20,
+                'infantil': 25,
+                'tratamento': 40
+            };
+
+            let revenue = 0;
+
+            bookings.forEach(booking => {
+                // Count services
+                const serviceKey = booking.service.toLowerCase();
+                if (!serviceMap[booking.service]) {
+                    serviceMap[booking.service] = 0;
+                }
+                serviceMap[booking.service]++;
+
+                // Calculate revenue for confirmed bookings
+                if (booking.status === 'Confirmado') {
+                    const serviceType = Object.keys(servicePrices).find(key => serviceKey.includes(key));
+                    if (serviceType) {
+                        revenue += servicePrices[serviceType];
+                    }
+                }
+            });
+
+            const topServices = Object.entries(serviceMap)
+                .map(([name, count]) => ({ name, count }))
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 5);
+
+            return {
+                total: bookings.length,
+                confirmed: bookings.filter(b => b.status === 'Confirmado').length,
+                pending: bookings.filter(b => b.status === 'Pendente').length,
+                cancelled: bookings.filter(b => b.status === 'Cancelado').length,
+                today: bookings.filter(b => b.date === today).length,
+                revenue,
+                topServices
+            };
+        }
+
+        // Utility functions
+        function formatDate(dateStr) {
+            return new Date(dateStr + 'T00:00:00').toLocaleDateString('pt-BR');
+        }
+
+        function showMessage(message, type) {
+            const messageEl = document.getElementById('globalMessage');
+            messageEl.textContent = message;
+            messageEl.className = `message ${type}`;
+            messageEl.style.display = 'block';
+            
+            setTimeout(() => {
+                messageEl.style.display = 'none';
+            }, 5000);
+        }
+
+        async function populateDateFilter() {
+            try {
+                const response = await fetch('/api/bookings', {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                const bookings = await response.json();
+                const dates = [...new Set(bookings.map(b => b.date))].sort().reverse();
+
+                const filterDate = document.getElementById('filterDate');
+                filterDate.innerHTML = '<option value="">Todas as datas</option>';
+                
+                dates.forEach(date => {
+                    const option = document.createElement('option');
+                    option.value = date;
+                    option.textContent = formatDate(date);
+                    filterDate.appendChild(option);
+                });
+
+            } catch (error) {
+                console.error('Erro ao carregar datas:', error);
+            }
+        }
+    </script>
+
+    <style>
+        .stat-card {
+            background: rgba(244, 196, 48, 0.1);
+            border: 1px solid rgba(244, 196, 48, 0.3);
+            border-radius: 10px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .stat-card h4 {
+            color: #f4c430;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: white;
+        }
+    </style>
+</body>
+</html>
