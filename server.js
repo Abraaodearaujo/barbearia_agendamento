@@ -1,5 +1,5 @@
 const express = require('express');
-const sqlite3 = require('sqlite3').verbose();
+const { Pool } = require('pg');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -15,88 +15,102 @@ const JWT_SECRET = process.env.JWT_SECRET || 'barbershop_elite_secret_2025';
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public')); // Servir arquivos estáticos
+app.use(express.static('public'));
 
-// Inicializar banco de dados
-const db = new sqlite3.Database('./barbershop.db', (err) => {
+// Configuração do PostgreSQL
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+});
+
+// Testar conexão
+pool.connect((err, client, release) => {
     if (err) {
-        console.error('Erro ao conectar com o banco de dados:', err);
+        console.error('❌ Erro ao conectar com PostgreSQL:', err);
     } else {
-        console.log('🗄️ Conectado ao banco de dados SQLite');
+        console.log('🗄️ Conectado ao PostgreSQL');
+        release();
         initializeDatabase();
     }
 });
 
 // Inicializar tabelas do banco
-function initializeDatabase() {
-    // Tabela de administradores
-    db.run(`CREATE TABLE IF NOT EXISTS admins (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL,
-        email TEXT NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )`);
+async function initializeDatabase() {
+    try {
+        // Tabela de administradores
+        await pool.query(`CREATE TABLE IF NOT EXISTS admins (
+            id SERIAL PRIMARY KEY,
+            username VARCHAR(255) UNIQUE NOT NULL,
+            password VARCHAR(255) NOT NULL,
+            email VARCHAR(255) NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`);
 
-    // Tabela de configurações
-    db.run(`CREATE TABLE IF NOT EXISTS settings (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        key_name TEXT UNIQUE NOT NULL,
-        key_value TEXT NOT NULL,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )`);
+        // Tabela de configurações
+        await pool.query(`CREATE TABLE IF NOT EXISTS settings (
+            id SERIAL PRIMARY KEY,
+            key_name VARCHAR(255) UNIQUE NOT NULL,
+            key_value TEXT NOT NULL,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`);
 
-    // Tabela de agendamentos
-    db.run(`CREATE TABLE IF NOT EXISTS bookings (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        phone TEXT NOT NULL,
-        email TEXT NOT NULL,
-        service TEXT NOT NULL,
-        barber TEXT,
-        date TEXT NOT NULL,
-        time TEXT NOT NULL,
-        notes TEXT,
-        status TEXT DEFAULT 'Pendente',
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )`);
+        // Tabela de agendamentos
+        await pool.query(`CREATE TABLE IF NOT EXISTS bookings (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(255) NOT NULL,
+            phone VARCHAR(50) NOT NULL,
+            email VARCHAR(255) NOT NULL,
+            service VARCHAR(255) NOT NULL,
+            barber VARCHAR(255),
+            date VARCHAR(20) NOT NULL,
+            time VARCHAR(10) NOT NULL,
+            notes TEXT,
+            status VARCHAR(50) DEFAULT 'Pendente',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`);
 
-    // Tabela de horários bloqueados
-    db.run(`CREATE TABLE IF NOT EXISTS blocked_times (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        date TEXT NOT NULL,
-        time TEXT NOT NULL,
-        reason TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(date, time)
-    )`);
+        // Tabela de horários bloqueados
+        await pool.query(`CREATE TABLE IF NOT EXISTS blocked_times (
+            id SERIAL PRIMARY KEY,
+            date VARCHAR(20) NOT NULL,
+            time VARCHAR(10) NOT NULL,
+            reason TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(date, time)
+        )`);
 
-    // Criar admin padrão
-    createDefaultAdmin();
-    
-    // Configurações padrão
-    insertDefaultSettings();
+        console.log('✅ Tabelas criadas/verificadas');
+        
+        // Criar admin padrão
+        await createDefaultAdmin();
+        
+        // Configurações padrão
+        await insertDefaultSettings();
+        
+    } catch (error) {
+        console.error('❌ Erro ao inicializar banco:', error);
+    }
 }
 
 // Criar administrador padrão
 async function createDefaultAdmin() {
-    const hashedPassword = await bcrypt.hash('admin123', 10);
-    
-    db.run(`INSERT OR IGNORE INTO admins (username, password, email) 
-            VALUES (?, ?, ?)`, 
-            ['admin', hashedPassword, 'silvaabraao739@gmail.com'], 
-            function(err) {
-                if (err) {
-                    console.error('Erro ao criar admin padrão:', err);
-                } else if (this.changes > 0) {
-                    console.log('👤 Admin padrão criado - Username: admin, Password: admin123');
-                }
-            });
+    try {
+        const hashedPassword = await bcrypt.hash('admin123', 10);
+        
+        await pool.query(`INSERT INTO admins (username, password, email) 
+                         VALUES ($1, $2, $3) 
+                         ON CONFLICT (username) DO NOTHING`, 
+                         ['admin', hashedPassword, 'silvaabraao739@gmail.com']);
+        
+        console.log('👤 Admin padrão verificado');
+    } catch (error) {
+        console.error('❌ Erro ao criar admin:', error);
+    }
 }
 
 // Configurações padrão
-function insertDefaultSettings() {
+async function insertDefaultSettings() {
     const defaultSettings = [
         ['owner_email', 'silvaabraao739@gmail.com'],
         ['owner_name', 'Abraão'],
@@ -110,10 +124,17 @@ function insertDefaultSettings() {
         ['lunch_break_end', '14:00']
     ];
 
-    defaultSettings.forEach(([key, value]) => {
-        db.run(`INSERT OR IGNORE INTO settings (key_name, key_value) VALUES (?, ?)`, 
-                [key, value]);
-    });
+    for (const [key, value] of defaultSettings) {
+        try {
+            await pool.query(`INSERT INTO settings (key_name, key_value) 
+                             VALUES ($1, $2) 
+                             ON CONFLICT (key_name) DO NOTHING`, 
+                             [key, value]);
+        } catch (error) {
+            console.error(`Erro ao inserir configuração ${key}:`, error);
+        }
+    }
+    console.log('⚙️ Configurações padrão verificadas');
 }
 
 // Middleware de autenticação
@@ -134,33 +155,6 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
-// Configurar transporter de email
-function createEmailTransporter() {
-    return new Promise((resolve, reject) => {
-        db.get(`SELECT key_value FROM settings WHERE key_name = 'email_config'`, 
-               (err, row) => {
-            if (err || !row) {
-                // Usar configuração padrão (Formspree como fallback)
-                resolve(null);
-            } else {
-                try {
-                    const emailConfig = JSON.parse(row.key_value);
-                    const transporter = nodemailer.createTransporter({
-                        service: emailConfig.service || 'gmail',
-                        auth: {
-                            user: emailConfig.user,
-                            pass: emailConfig.password
-                        }
-                    });
-                    resolve(transporter);
-                } catch (error) {
-                    resolve(null);
-                }
-            }
-        });
-    });
-}
-
 // ROTAS DE AUTENTICAÇÃO
 
 // Login do admin
@@ -171,10 +165,9 @@ app.post('/api/admin/login', async (req, res) => {
         return res.status(400).json({ error: 'Username e password são obrigatórios' });
     }
 
-    db.get(`SELECT * FROM admins WHERE username = ?`, [username], async (err, admin) => {
-        if (err) {
-            return res.status(500).json({ error: 'Erro no servidor' });
-        }
+    try {
+        const result = await pool.query('SELECT * FROM admins WHERE username = $1', [username]);
+        const admin = result.rows[0];
 
         if (!admin || !await bcrypt.compare(password, admin.password)) {
             return res.status(401).json({ error: 'Credenciais inválidas' });
@@ -195,7 +188,10 @@ app.post('/api/admin/login', async (req, res) => {
                 email: admin.email
             }
         });
-    });
+    } catch (error) {
+        console.error('Erro no login:', error);
+        res.status(500).json({ error: 'Erro no servidor' });
+    }
 });
 
 // Verificar token
@@ -206,146 +202,146 @@ app.get('/api/admin/verify', authenticateToken, (req, res) => {
 // ROTAS DE CONFIGURAÇÕES
 
 // Obter todas as configurações
-app.get('/api/settings', authenticateToken, (req, res) => {
-    db.all(`SELECT * FROM settings`, (err, settings) => {
-        if (err) {
-            return res.status(500).json({ error: 'Erro ao buscar configurações' });
-        }
-
+app.get('/api/settings', authenticateToken, async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM settings');
+        
         const settingsObj = {};
-        settings.forEach(setting => {
+        result.rows.forEach(setting => {
             settingsObj[setting.key_name] = setting.key_value;
         });
 
         res.json(settingsObj);
-    });
+    } catch (error) {
+        console.error('Erro ao buscar configurações:', error);
+        res.status(500).json({ error: 'Erro ao buscar configurações' });
+    }
 });
 
 // Atualizar configurações
-app.post('/api/settings', authenticateToken, (req, res) => {
+app.post('/api/settings', authenticateToken, async (req, res) => {
     const settings = req.body;
     
-    const promises = Object.entries(settings).map(([key, value]) => {
-        return new Promise((resolve, reject) => {
-            db.run(`INSERT OR REPLACE INTO settings (key_name, key_value, updated_at) 
-                    VALUES (?, ?, CURRENT_TIMESTAMP)`, 
-                    [key, value], 
-                    (err) => {
-                        if (err) reject(err);
-                        else resolve();
-                    });
-        });
-    });
+    try {
+        for (const [key, value] of Object.entries(settings)) {
+            await pool.query(`INSERT INTO settings (key_name, key_value, updated_at) 
+                             VALUES ($1, $2, CURRENT_TIMESTAMP) 
+                             ON CONFLICT (key_name) 
+                             DO UPDATE SET key_value = $2, updated_at = CURRENT_TIMESTAMP`, 
+                             [key, value]);
+        }
 
-    Promise.all(promises)
-        .then(() => {
-            res.json({ success: true, message: 'Configurações atualizadas com sucesso' });
-        })
-        .catch(err => {
-            console.error('Erro ao atualizar configurações:', err);
-            res.status(500).json({ error: 'Erro ao atualizar configurações' });
-        });
+        res.json({ success: true, message: 'Configurações atualizadas com sucesso' });
+    } catch (error) {
+        console.error('Erro ao atualizar configurações:', error);
+        res.status(500).json({ error: 'Erro ao atualizar configurações' });
+    }
 });
 
 // ROTAS DE HORÁRIOS BLOQUEADOS
 
 // Obter horários bloqueados
-app.get('/api/blocked-times', (req, res) => {
+app.get('/api/blocked-times', async (req, res) => {
     const { date } = req.query;
     
-    let query = `SELECT * FROM blocked_times`;
-    let params = [];
-    
-    if (date) {
-        query += ` WHERE date = ?`;
-        params.push(date);
-    }
-    
-    query += ` ORDER BY date, time`;
-
-    db.all(query, params, (err, blockedTimes) => {
-        if (err) {
-            return res.status(500).json({ error: 'Erro ao buscar horários bloqueados' });
+    try {
+        let query = 'SELECT * FROM blocked_times';
+        let params = [];
+        
+        if (date) {
+            query += ' WHERE date = $1';
+            params.push(date);
         }
-        res.json(blockedTimes);
-    });
+        
+        query += ' ORDER BY date, time';
+
+        const result = await pool.query(query, params);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Erro ao buscar horários bloqueados:', error);
+        res.status(500).json({ error: 'Erro ao buscar horários bloqueados' });
+    }
 });
 
 // Adicionar horário bloqueado
-app.post('/api/blocked-times', authenticateToken, (req, res) => {
+app.post('/api/blocked-times', authenticateToken, async (req, res) => {
     const { date, time, reason } = req.body;
 
     if (!date || !time) {
         return res.status(400).json({ error: 'Data e horário são obrigatórios' });
     }
 
-    db.run(`INSERT INTO blocked_times (date, time, reason) VALUES (?, ?, ?)`,
-           [date, time, reason || 'Horário bloqueado pelo administrador'],
-           function(err) {
-               if (err) {
-                   if (err.code === 'SQLITE_CONSTRAINT') {
-                       return res.status(400).json({ error: 'Horário já está bloqueado' });
-                   }
-                   return res.status(500).json({ error: 'Erro ao bloquear horário' });
-               }
-               
-               res.json({
-                   success: true,
-                   id: this.lastID,
-                   message: 'Horário bloqueado com sucesso'
-               });
-           });
+    try {
+        const result = await pool.query(
+            'INSERT INTO blocked_times (date, time, reason) VALUES ($1, $2, $3) RETURNING id',
+            [date, time, reason || 'Horário bloqueado pelo administrador']
+        );
+        
+        res.json({
+            success: true,
+            id: result.rows[0].id,
+            message: 'Horário bloqueado com sucesso'
+        });
+    } catch (error) {
+        if (error.code === '23505') { // Unique constraint violation
+            return res.status(400).json({ error: 'Horário já está bloqueado' });
+        }
+        console.error('Erro ao bloquear horário:', error);
+        res.status(500).json({ error: 'Erro ao bloquear horário' });
+    }
 });
 
 // Remover horário bloqueado
-app.delete('/api/blocked-times/:id', authenticateToken, (req, res) => {
+app.delete('/api/blocked-times/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
 
-    db.run(`DELETE FROM blocked_times WHERE id = ?`, [id], function(err) {
-        if (err) {
-            return res.status(500).json({ error: 'Erro ao remover bloqueio' });
-        }
+    try {
+        const result = await pool.query('DELETE FROM blocked_times WHERE id = $1', [id]);
         
-        if (this.changes === 0) {
+        if (result.rowCount === 0) {
             return res.status(404).json({ error: 'Horário bloqueado não encontrado' });
         }
         
         res.json({ success: true, message: 'Bloqueio removido com sucesso' });
-    });
+    } catch (error) {
+        console.error('Erro ao remover bloqueio:', error);
+        res.status(500).json({ error: 'Erro ao remover bloqueio' });
+    }
 });
 
 // ROTAS DE AGENDAMENTOS
 
 // Obter todos os agendamentos
-app.get('/api/bookings', authenticateToken, (req, res) => {
+app.get('/api/bookings', authenticateToken, async (req, res) => {
     const { date, status } = req.query;
     
-    let query = `SELECT * FROM bookings`;
-    let params = [];
-    let conditions = [];
-    
-    if (date) {
-        conditions.push(`date = ?`);
-        params.push(date);
-    }
-    
-    if (status) {
-        conditions.push(`status = ?`);
-        params.push(status);
-    }
-    
-    if (conditions.length > 0) {
-        query += ` WHERE ` + conditions.join(' AND ');
-    }
-    
-    query += ` ORDER BY date DESC, time DESC`;
-
-    db.all(query, params, (err, bookings) => {
-        if (err) {
-            return res.status(500).json({ error: 'Erro ao buscar agendamentos' });
+    try {
+        let query = 'SELECT * FROM bookings';
+        let params = [];
+        let conditions = [];
+        
+        if (date) {
+            conditions.push(`date = $${params.length + 1}`);
+            params.push(date);
         }
-        res.json(bookings);
-    });
+        
+        if (status) {
+            conditions.push(`status = $${params.length + 1}`);
+            params.push(status);
+        }
+        
+        if (conditions.length > 0) {
+            query += ' WHERE ' + conditions.join(' AND ');
+        }
+        
+        query += ' ORDER BY date DESC, time DESC';
+
+        const result = await pool.query(query, params);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Erro ao buscar agendamentos:', error);
+        res.status(500).json({ error: 'Erro ao buscar agendamentos' });
+    }
 });
 
 // Criar novo agendamento
@@ -356,62 +352,61 @@ app.post('/api/bookings', async (req, res) => {
         return res.status(400).json({ error: 'Todos os campos obrigatórios devem ser preenchidos' });
     }
 
-    // Verificar se o horário está disponível
-    db.get(`SELECT COUNT(*) as count FROM bookings 
-            WHERE date = ? AND time = ? AND status != 'Cancelado'`, 
-           [date, time], (err, result) => {
-        if (err) {
-            return res.status(500).json({ error: 'Erro ao verificar disponibilidade' });
-        }
+    try {
+        // Verificar se o horário está disponível
+        const bookingCheck = await pool.query(
+            `SELECT COUNT(*) as count FROM bookings 
+             WHERE date = $1 AND time = $2 AND status != 'Cancelado'`, 
+            [date, time]
+        );
 
-        if (result.count > 0) {
+        if (parseInt(bookingCheck.rows[0].count) > 0) {
             return res.status(400).json({ error: 'Horário já está ocupado' });
         }
 
         // Verificar se o horário está bloqueado
-        db.get(`SELECT COUNT(*) as count FROM blocked_times WHERE date = ? AND time = ?`,
-               [date, time], (err, blockedResult) => {
-            if (err) {
-                return res.status(500).json({ error: 'Erro ao verificar bloqueios' });
-            }
+        const blockedCheck = await pool.query(
+            'SELECT COUNT(*) as count FROM blocked_times WHERE date = $1 AND time = $2',
+            [date, time]
+        );
 
-            if (blockedResult.count > 0) {
-                return res.status(400).json({ error: 'Horário não está disponível' });
-            }
+        if (parseInt(blockedCheck.rows[0].count) > 0) {
+            return res.status(400).json({ error: 'Horário não está disponível' });
+        }
 
-            // Criar o agendamento
-            db.run(`INSERT INTO bookings (name, phone, email, service, barber, date, time, notes, status) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Pendente')`,
-                   [name, phone, email, service, barber, date, time, notes],
-                   async function(err) {
-                       if (err) {
-                           return res.status(500).json({ error: 'Erro ao criar agendamento' });
-                       }
+        // Criar o agendamento
+        const result = await pool.query(
+            `INSERT INTO bookings (name, phone, email, service, barber, date, time, notes, status) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'Pendente') RETURNING id`,
+            [name, phone, email, service, barber, date, time, notes]
+        );
 
-                       const bookingId = this.lastID;
-                       
-                       // Tentar enviar email de notificação
-                       try {
-                           await sendBookingNotification({
-                               id: bookingId,
-                               name, phone, email, service, barber, date, time, notes
-                           });
-                       } catch (emailError) {
-                           console.error('Erro ao enviar email:', emailError);
-                       }
+        const bookingId = result.rows[0].id;
+        
+        // Tentar enviar email de notificação
+        try {
+            await sendBookingNotification({
+                id: bookingId,
+                name, phone, email, service, barber, date, time, notes
+            });
+        } catch (emailError) {
+            console.error('Erro ao enviar email:', emailError);
+        }
 
-                       res.json({
-                           success: true,
-                           id: bookingId,
-                           message: 'Agendamento criado com sucesso'
-                       });
-                   });
+        res.json({
+            success: true,
+            id: bookingId,
+            message: 'Agendamento criado com sucesso'
         });
-    });
+        
+    } catch (error) {
+        console.error('Erro ao criar agendamento:', error);
+        res.status(500).json({ error: 'Erro ao criar agendamento' });
+    }
 });
 
 // Atualizar status do agendamento
-app.patch('/api/bookings/:id', authenticateToken, (req, res) => {
+app.patch('/api/bookings/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
     const { status, notes } = req.body;
 
@@ -419,46 +414,42 @@ app.patch('/api/bookings/:id', authenticateToken, (req, res) => {
         return res.status(400).json({ error: 'Status é obrigatório' });
     }
 
-    let query = `UPDATE bookings SET status = ?, updated_at = CURRENT_TIMESTAMP`;
-    let params = [status];
+    try {
+        let query = 'UPDATE bookings SET status = $1, updated_at = CURRENT_TIMESTAMP';
+        let params = [status];
 
-    if (notes !== undefined) {
-        query += `, notes = ?`;
-        params.push(notes);
-    }
-
-    query += ` WHERE id = ?`;
-    params.push(id);
-
-    db.run(query, params, function(err) {
-        if (err) {
-            return res.status(500).json({ error: 'Erro ao atualizar agendamento' });
+        if (notes !== undefined) {
+            query += ', notes = $2';
+            params.push(notes);
         }
 
-        if (this.changes === 0) {
+        query += ` WHERE id = $${params.length + 1}`;
+        params.push(id);
+
+        const result = await pool.query(query, params);
+
+        if (result.rowCount === 0) {
             return res.status(404).json({ error: 'Agendamento não encontrado' });
         }
 
         res.json({ success: true, message: 'Agendamento atualizado com sucesso' });
-    });
+    } catch (error) {
+        console.error('Erro ao atualizar agendamento:', error);
+        res.status(500).json({ error: 'Erro ao atualizar agendamento' });
+    }
 });
 
 // Função para enviar notificação de agendamento
 async function sendBookingNotification(booking) {
     try {
         // Obter configurações de email
-        const settings = await new Promise((resolve, reject) => {
-            db.all(`SELECT * FROM settings WHERE key_name IN ('owner_email', 'owner_name', 'email_notifications')`,
-                   (err, rows) => {
-                       if (err) reject(err);
-                       else {
-                           const config = {};
-                           rows.forEach(row => {
-                               config[row.key_name] = row.key_value;
-                           });
-                           resolve(config);
-                       }
-                   });
+        const result = await pool.query(
+            `SELECT * FROM settings WHERE key_name IN ('owner_email', 'owner_name', 'email_notifications')`
+        );
+        
+        const settings = {};
+        result.rows.forEach(row => {
+            settings[row.key_name] = row.key_value;
         });
 
         if (settings.email_notifications !== 'true') {
@@ -466,7 +457,7 @@ async function sendBookingNotification(booking) {
             return;
         }
 
-        // Usar Formspree como método principal
+        // Usar Formspree
         const formspreeResponse = await fetch('https://formspree.io/f/mwpqjgzz', {
             method: 'POST',
             headers: {
@@ -511,7 +502,7 @@ Status: Pendente confirmação`
 }
 
 // ROTA PARA OBTER HORÁRIOS DISPONÍVEIS
-app.get('/api/available-times', (req, res) => {
+app.get('/api/available-times', async (req, res) => {
     const { date } = req.query;
 
     if (!date) {
@@ -524,23 +515,15 @@ app.get('/api/available-times', (req, res) => {
         '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00'
     ];
 
-    // Buscar horários ocupados e bloqueados
-    Promise.all([
-        new Promise((resolve, reject) => {
-            db.all(`SELECT time FROM bookings WHERE date = ? AND status != 'Cancelado'`,
-                   [date], (err, rows) => {
-                       if (err) reject(err);
-                       else resolve(rows.map(row => row.time));
-                   });
-        }),
-        new Promise((resolve, reject) => {
-            db.all(`SELECT time FROM blocked_times WHERE date = ?`,
-                   [date], (err, rows) => {
-                       if (err) reject(err);
-                       else resolve(rows.map(row => row.time));
-                   });
-        })
-    ]).then(([bookedTimes, blockedTimes]) => {
+    try {
+        // Buscar horários ocupados e bloqueados
+        const [bookedResult, blockedResult] = await Promise.all([
+            pool.query(`SELECT time FROM bookings WHERE date = $1 AND status != 'Cancelado'`, [date]),
+            pool.query(`SELECT time FROM blocked_times WHERE date = $1`, [date])
+        ]);
+
+        const bookedTimes = bookedResult.rows.map(row => row.time);
+        const blockedTimes = blockedResult.rows.map(row => row.time);
         const unavailableTimes = [...bookedTimes, ...blockedTimes];
         const availableTimes = allTimes.filter(time => !unavailableTimes.includes(time));
 
@@ -550,10 +533,10 @@ app.get('/api/available-times', (req, res) => {
             booked: bookedTimes,
             blocked: blockedTimes
         });
-    }).catch(err => {
-        console.error('Erro ao buscar horários disponíveis:', err);
+    } catch (error) {
+        console.error('Erro ao buscar horários disponíveis:', error);
         res.status(500).json({ error: 'Erro ao buscar horários disponíveis' });
-    });
+    }
 });
 
 // Servir página de administração
@@ -561,7 +544,7 @@ app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
-// Iniciar servidor - ÚNICA CHAMADA app.listen()
+// Iniciar servidor
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Servidor rodando na porta ${PORT}`);
     console.log(`🌐 Ambiente: ${process.env.NODE_ENV || 'development'}`);
@@ -570,14 +553,9 @@ app.listen(PORT, '0.0.0.0', () => {
 });
 
 // Graceful shutdown
-process.on('SIGINT', () => {
+process.on('SIGINT', async () => {
     console.log('\n🔄 Fechando servidor...');
-    db.close((err) => {
-        if (err) {
-            console.error('Erro ao fechar banco de dados:', err);
-        } else {
-            console.log('🗄️ Banco de dados fechado');
-        }
-        process.exit(0);
-    });
+    await pool.end();
+    console.log('🗄️ Pool de conexões fechado');
+    process.exit(0);
 });
